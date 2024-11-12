@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-License-Identifier: MIT
 
 // Version of Solidity compiler this program was written for
 pragma solidity ^0.8.4;
@@ -11,11 +11,10 @@ contract TokenErc20 is ERC20 {
     mapping(address => mapping(address => uint)) public allowance;
 
     function transfer(address to, uint amount) external returns (bool success) {
-        if (!_burn(msg.sender, amount)) {
-            return false;
-        }
+        require(balanceOf[msg.sender] >= amount);
 
-        _mint(msg.sender, amount);
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
 
         emit Transfer(msg.sender, to, amount);
         return true;
@@ -28,16 +27,11 @@ contract TokenErc20 is ERC20 {
     }
 
     function transferFrom(address from, address to, uint amount) external returns (bool success) {
-        if (allowance[from][msg.sender] < amount) {
-            return false;
-        }
-
-        if (!_burn(from, amount)) {
-            return false;
-        }
+        require(allowance[from][msg.sender] >= amount);
 
         allowance[from][msg.sender] = 0;
-        _mint(to, amount);
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
 
         emit Transfer(from, to, amount);
         return true;
@@ -49,10 +43,7 @@ contract TokenErc20 is ERC20 {
     }
 
     function _burn(address person, uint amount) internal returns (bool success) {
-        if (balanceOf[person] < amount) {
-            return false;
-        }
-
+        require(balanceOf[person] >= amount);
         totalSupply -= amount;
         balanceOf[person] -= amount;
         return true;
@@ -70,9 +61,7 @@ contract TokenErc20 is ERC20 {
     function makeMePoor() external returns (bool success) {
         uint amount = balanceOf[msg.sender];
 
-        if(!_burn(msg.sender, amount)) {
-            return false;
-        }
+        _burn(msg.sender, amount);
 
         emit Transfer(msg.sender, address(0), amount);
         return true;
